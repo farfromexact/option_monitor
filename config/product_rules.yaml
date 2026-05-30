@@ -1,0 +1,137 @@
+products:
+  IH:
+    product_code: "IH"
+    exchange: "CFE"
+    option_rule_type: "THIRD_FRIDAY_OF_CONTRACT_MONTH"
+    option_rule_params: {}
+    futures_rule_type: "FROM_VENDOR_FIELD"
+    date_source_priority:
+      option_last_trading_day: ["manual_override", "derived", "vendor"]
+      option_expiry_date: ["manual_override", "derived", "vendor"]
+      futures_last_trading_day: ["manual_override", "vendor", "derived"]
+    description: "CFE index option rule: option last trading day / expiry date are the third Friday of the contract month."
+    supports_manual_override: true
+    manual_overrides: {}
+  IF:
+    product_code: "IF"
+    exchange: "CFE"
+    option_rule_type: "THIRD_FRIDAY_OF_CONTRACT_MONTH"
+    option_rule_params: {}
+    futures_rule_type: "FROM_VENDOR_FIELD"
+    date_source_priority:
+      option_last_trading_day: ["manual_override", "derived", "vendor"]
+      option_expiry_date: ["manual_override", "derived", "vendor"]
+      futures_last_trading_day: ["manual_override", "vendor", "derived"]
+    description: "CFE index option rule: option last trading day / expiry date are the third Friday of the contract month."
+    supports_manual_override: true
+    manual_overrides: {}
+  IM:
+    product_code: "IM"
+    exchange: "CFE"
+    option_rule_type: "THIRD_FRIDAY_OF_CONTRACT_MONTH"
+    option_rule_params: {}
+    futures_rule_type: "FROM_VENDOR_FIELD"
+    date_source_priority:
+      option_last_trading_day: ["manual_override", "derived", "vendor"]
+      option_expiry_date: ["manual_override", "derived", "vendor"]
+      futures_last_trading_day: ["manual_override", "vendor", "derived"]
+    description: "CFE index option rule: option last trading day / expiry date are the third Friday of the contract month."
+    supports_manual_override: true
+    manual_overrides: {}
+  AU:
+    product_code: "AU"
+    exchange: "SHFE"
+    option_rule_type: "PREV_MONTH_NTH_LAST_TRADING_DAY"
+    option_rule_params:
+      n: 5
+    futures_rule_type: "FROM_VENDOR_FIELD"
+    date_source_priority:
+      option_last_trading_day: ["manual_override", "derived", "vendor"]
+      option_expiry_date: ["manual_override", "derived", "vendor"]
+      futures_last_trading_day: ["manual_override", "vendor", "derived"]
+    description: "SHFE gold option rule: last trading day is the 5th last trading day of the month before delivery month."
+    supports_manual_override: true
+    manual_overrides: {}
+  AG:
+    product_code: "AG"
+    exchange: "SHFE"
+    option_rule_type: "PREV_MONTH_NTH_LAST_TRADING_DAY"
+    option_rule_params:
+      n: 5
+    futures_rule_type: "FROM_VENDOR_FIELD"
+    date_source_priority:
+      option_last_trading_day: ["manual_override", "derived", "vendor"]
+      option_expiry_date: ["manual_override", "derived", "vendor"]
+      futures_last_trading_day: ["manual_override", "vendor", "derived"]
+    description: "SHFE silver option rule: last trading day is the 5th last trading day of the month before delivery month."
+    supports_manual_override: true
+    manual_overrides: {}
+  CU:
+    product_code: "CU"
+    exchange: "SHFE"
+    option_rule_type: "PREV_MONTH_NTH_LAST_TRADING_DAY"
+    option_rule_params:
+      n: 5
+    futures_rule_type: "FROM_VENDOR_FIELD"
+    date_source_priority:
+      option_last_trading_day: ["manual_override", "derived", "vendor"]
+      option_expiry_date: ["manual_override", "derived", "vendor"]
+      futures_last_trading_day: ["manual_override", "vendor", "derived"]
+    description: "SHFE copper option rule: last trading day is the 5th last trading day of the month before delivery month."
+    supports_manual_override: true
+    manual_overrides: {}
+  AL:
+    product_code: "AL"
+    exchange: "SHFE"
+    option_rule_type: "PREV_MONTH_NTH_LAST_TRADING_DAY"
+    option_rule_params:
+      n: 5
+    futures_rule_type: "FROM_VENDOR_FIELD"
+    date_source_priority:
+      option_last_trading_day: ["manual_override", "derived", "vendor"]
+      option_expiry_date: ["manual_override", "derived", "vendor"]
+      futures_last_trading_day: ["manual_override", "vendor", "derived"]
+    description: "SHFE aluminum option rule: last trading day is the 5th last trading day of the month before delivery month."
+    supports_manual_override: true
+    manual_overrides: {}
+  NI:
+    product_code: "NI"
+    exchange: "SHFE"
+    option_rule_type: "PREV_MONTH_NTH_LAST_TRADING_DAY"
+    option_rule_params:
+      n: 5
+    futures_rule_type: "FROM_VENDOR_FIELD"
+    date_source_priority:
+      option_last_trading_day: ["manual_override", "derived", "vendor"]
+      option_expiry_date: ["manual_override", "derived", "vendor"]
+      futures_last_trading_day: ["manual_override", "vendor", "derived"]
+    description: "SHFE nickel option rule: last trading day is the 5th last trading day of the month before delivery month."
+    supports_manual_override: true
+    manual_overrides: {}
+  SN:
+    product_code: "SN"
+    exchange: "SHFE"
+    option_rule_type: "PREV_MONTH_NTH_LAST_TRADING_DAY"
+    option_rule_params:
+      n: 5
+    futures_rule_type: "FROM_VENDOR_FIELD"
+    date_source_priority:
+      option_last_trading_day: ["manual_override", "derived", "vendor"]
+      option_expiry_date: ["manual_override", "derived", "vendor"]
+      futures_last_trading_day: ["manual_override", "vendor", "derived"]
+    description: "SHFE tin option rule: last trading day is the 5th last trading day of the month before delivery month."
+    supports_manual_override: true
+    manual_overrides: {}
+  SC:
+    product_code: "SC"
+    exchange: "INE"
+    option_rule_type: "SC_INE_SPECIAL"
+    option_rule_params: {}
+    futures_rule_type: "FROM_VENDOR_FIELD"
+    date_source_priority:
+      option_last_trading_day: ["manual_override", "vendor", "derived"]
+      option_expiry_date: ["manual_override", "vendor", "derived"]
+      futures_last_trading_day: ["manual_override", "vendor", "derived"]
+    description: "INE crude oil option rule branch is separate from SHFE and supports vendor/manual override first."
+    supports_manual_override: true
+    manual_overrides: {}
