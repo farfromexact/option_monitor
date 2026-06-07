@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from datetime import date
+
+import pandas as pd
+
 from data.wind_client import WindClient, WindClientConfig
 
 
@@ -39,3 +43,28 @@ def test_parse_compact_option_code() -> None:
 def test_parse_compact_option_code_with_month_start_expiry() -> None:
     client = _client(expiry_rule="month_start")
     assert client._parse_option_expiry("SC2605P500.INE") == "2026-05-01"
+
+
+def test_stale_option_month_detection() -> None:
+    client = _client()
+    assert client._is_stale_option_month_code("2603", date(2026, 6, 7))
+    assert not client._is_stale_option_month_code("2606", date(2026, 6, 7))
+    assert not client._is_stale_option_month_code("2607", date(2026, 6, 7))
+
+
+def test_option_quote_block_splits_and_skips_bad_code(monkeypatch) -> None:
+    client = _client()
+    codes = ["GOOD1.CFE", "BAD.CFE", "GOOD2.CFE"]
+
+    def fake_call_with_retry(method_name: str, code_arg: str, fields_arg: str, **kwargs):
+        assert method_name == "wsq"
+        queried_codes = code_arg.split(",")
+        if "BAD.CFE" in queried_codes:
+            raise RuntimeError("Wind error code: -40522017")
+        return (0, pd.DataFrame({"RT_LAST": [1.0] * len(queried_codes)}, index=queried_codes))
+
+    monkeypatch.setattr(client, "_call_with_retry", fake_call_with_retry)
+
+    result = client._fetch_option_quote_block(codes, ["rt_last"])
+
+    assert result.index.tolist() == ["GOOD1.CFE", "GOOD2.CFE"]

@@ -1,5 +1,9 @@
 # Option Monitor
 
+## Screenshot
+
+![Option Monitor desktop app](docs/assets/option-monitor-screenshot.png)
+
 基于 `Python + PySide6 + pyqtgraph` 的股指期货 / 指数期权监控 MVP，当前产品目录覆盖：
 
 - `IH` 上证50期指，对应 `HO` 50指数期权

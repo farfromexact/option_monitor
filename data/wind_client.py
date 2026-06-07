@@ -35,7 +35,7 @@ class WindClient:
         self._w = None
         self._connected = False
         self._mock_mode = False
-        self._option_code_cache: dict[tuple[str, int], list[str]] = {}
+        self._option_code_cache: dict[tuple[str, str], list[str]] = {}
         self._option_chain_cache: dict[str, tuple[float, pd.DataFrame]] = {}
         self._intraday_failed_codes: set[str] = set()
         self._calendar_cache: dict[tuple[str, str, str], list[date]] = {}
@@ -126,7 +126,9 @@ class WindClient:
             raise RuntimeError("Wind is not connected. Please start and log in to Wind Terminal.")
 
         style = str(self.product.get("option_code_style", "cfe_hyphen"))
-        cache_key = (self.config.product_id, 0)
+        # Keep the generated option universe date-scoped so stale Wind logs do
+        # not keep yesterday's/month-old expired contracts alive in a long run.
+        cache_key = (self.config.product_id, date.today().isoformat())
         option_codes = self._option_code_cache.get(cache_key, [])
         if not option_codes:
             discovered_codes = self._discover_option_codes()
@@ -357,6 +359,7 @@ class WindClient:
         if self._w is None:
             raise RuntimeError("Wind client is not initialized")
         retry_count = int(kwargs.pop("retry_override", self.config.retry_count))
+        log_failures = bool(kwargs.pop("log_failures", True))
 
         for attempt in range(1, retry_count + 2):
             try:
@@ -367,7 +370,8 @@ class WindClient:
                     raise RuntimeError(f"Wind error code: {error_code}")
                 return result
             except Exception as exc:
-                logger.warning("Wind call failed attempt=%s method=%s reason=%s", attempt, method_name, exc)
+                if log_failures:
+                    logger.warning("Wind call failed attempt=%s method=%s reason=%s", attempt, method_name, exc)
                 if attempt > retry_count:
                     raise
                 time.sleep(self.config.retry_delay_seconds)
@@ -432,8 +436,19 @@ class WindClient:
             return []
 
         unique_months = sorted(set(discovered.values()))
+        active_months = [month for month in unique_months if not self._is_stale_option_month_code(month)]
+        stale_months = [month for month in unique_months if month not in active_months]
+        if stale_months:
+            logger.info(
+                "Ignoring stale discovered option months product=%s stale=%s current_month=%s",
+                self.config.product_id,
+                stale_months,
+                date.today().strftime("%y%m"),
+            )
+        if not active_months:
+            return []
         month_scan_count = max(int(self.product.get("option_month_scan_count", 1)), 3)
-        selected_months = unique_months[:month_scan_count]
+        selected_months = active_months[:month_scan_count]
         return sorted(code for code, month_code in discovered.items() if month_code in selected_months)
 
     def _extract_option_month_codes(self, codes: list[str]) -> list[str]:
@@ -462,18 +477,54 @@ class WindClient:
         chunk_size = 40
         for start in range(0, len(codes), chunk_size):
             chunk = codes[start:start + chunk_size]
-            try:
-                raw = self._call_with_retry("wsq", ",".join(chunk), ",".join(fields), usedf=True)
-                df = self._to_dataframe(raw)
-                if not df.empty:
-                    frames.append(df)
-            except Exception as exc:
-                logger.warning("Option quote query failed for chunk starting %s: %s", start, exc)
+            frames.extend(self._fetch_option_quote_chunk(chunk, fields, start))
         if not frames:
             return pd.DataFrame()
         combined = pd.concat(frames, axis=0)
         combined = combined[~combined.index.duplicated(keep="first")]
         return combined
+
+    def _fetch_option_quote_chunk(self, codes: list[str], fields: list[str], offset: int) -> list[pd.DataFrame]:
+        if not codes:
+            return []
+        try:
+            raw = self._call_with_retry(
+                "wsq",
+                ",".join(codes),
+                ",".join(fields),
+                usedf=True,
+                retry_override=0,
+                log_failures=False,
+            )
+            df = self._to_dataframe(raw)
+            return [df] if not df.empty else []
+        except Exception as exc:
+            error_code = _extract_wind_error_code(exc)
+            if len(codes) == 1:
+                logger.warning("Skip option code=%s because quote query failed: %s", codes[0], exc)
+                return []
+            if error_code not in (-40522017, -40522007, None):
+                logger.warning(
+                    "Option quote query failed for chunk starting=%s size=%s code=%s, skip chunk: %s",
+                    offset,
+                    len(codes),
+                    error_code,
+                    exc,
+                )
+                return []
+            midpoint = len(codes) // 2
+            logger.warning(
+                "Option quote query failed for chunk starting=%s size=%s code=%s, splitting: %s",
+                offset,
+                len(codes),
+                error_code,
+                exc,
+            )
+            return self._fetch_option_quote_chunk(codes[:midpoint], fields, offset) + self._fetch_option_quote_chunk(
+                codes[midpoint:],
+                fields,
+                offset + midpoint,
+            )
 
     def _fetch_quote_frame(self, codes: list[str], fields: list[str]) -> pd.DataFrame:
         if not codes:
@@ -557,6 +608,15 @@ class WindClient:
         code = str(contract_code).upper()
         match = re.match(r"^[A-Z]+(\d{4})(?:-[CP]-|[CP])\d+\.(?:CFE|SHF|INE|DCE|CZC|GFEX)$", code)
         return match.group(1) if match else None
+
+    @staticmethod
+    def _is_stale_option_month_code(month_code: str, asof_date: date | None = None) -> bool:
+        asof_date = asof_date or date.today()
+        parsed = _parse_month_code(month_code)
+        if parsed is None:
+            return False
+        year, month = parsed
+        return (year, month) < (asof_date.year, asof_date.month)
 
     @staticmethod
     def _third_friday(year: int, month: int) -> date:
@@ -733,6 +793,22 @@ def _next_quarter_month(start_month: int) -> int:
         if start_month <= month:
             return month
     return 3
+
+
+def _extract_wind_error_code(exc: Exception) -> int | None:
+    match = re.search(r"Wind error code:\s*(-?\d+)", str(exc))
+    return int(match.group(1)) if match else None
+
+
+def _parse_month_code(month_code: str) -> tuple[int, int] | None:
+    text = str(month_code).strip()
+    if not re.fullmatch(r"\d{4}", text):
+        return None
+    year = 2000 + int(text[:2])
+    month = int(text[2:])
+    if month < 1 or month > 12:
+        return None
+    return year, month
 
 
 def _prefer_live_price(last_value: float | None, fallback_value: float | None) -> float | None:
